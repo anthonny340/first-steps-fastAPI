@@ -1,0 +1,17 @@
+[project]
+name = "venv-primer-proyecto"
+version = "0.1.0"
+description = "Primeros pasos aprendiendo FastAPI empleando para gestion de entorno virtual y dependias Poetry"
+authors = [
+    {name = "Anthonny Sacheri",email = "tonysolorzano880@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard] (>=0.135.1,<0.136.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
