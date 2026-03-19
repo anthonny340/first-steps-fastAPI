@@ -31,9 +31,12 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
 
 
 @app.get('/posts/{post_id}')
-def get_post(post_id: int):
+def get_post(post_id: int, incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
     for post in BLOG_POST:
         if post_id == post['id']:
-            return {'data': post}
+            if incluide_content:
+                return {'data': post}
+            else:
+                return {'data': {'id': post['id'], 'title': post['title']}}
 
     return {'error': 'Post no encontrado'}
