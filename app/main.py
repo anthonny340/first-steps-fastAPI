@@ -28,3 +28,12 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
         return {'data': results, 'query': query}
 
     return {'data': BLOG_POST}
+
+
+@app.get('/posts/{post_id}')
+def get_post(post_id: int):
+    for post in BLOG_POST:
+        if post_id == post['id']:
+            return {'data': post}
+
+    return {'error': 'Post no encontrado'}
