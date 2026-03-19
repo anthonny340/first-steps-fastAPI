@@ -56,3 +56,18 @@ def create_post(post: dict = Body(...)):
 
     BLOG_POST.append(new_post)
     return {'message': 'Post creado', 'data': new_post}
+
+
+@app.put('/posts/{post_id}')
+def update_post(post_id: int, data: dict = Body(...)):
+    for post in BLOG_POST:
+        if post_id == post['id']:
+            if 'title' in data:
+                post['title'] = data['title']
+
+            if 'content' in data:
+                post['content'] = data['content']
+
+            return {'message': 'Post actualizado', 'data': post}
+
+    return {'error': 'No se encontro el post'}
