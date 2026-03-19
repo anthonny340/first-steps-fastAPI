@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, Body
+from fastapi import FastAPI, Query, Body, HTTPException
 
 app = FastAPI(title='Mini Blog')
 
@@ -70,4 +70,4 @@ def update_post(post_id: int, data: dict = Body(...)):
 
             return {'message': 'Post actualizado', 'data': post}
 
-    return {'error': 'No se encontro el post'}
+    raise HTTPException(status_code=404, detail='Post no encontrado')
