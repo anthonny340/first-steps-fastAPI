@@ -71,3 +71,13 @@ def update_post(post_id: int, data: dict = Body(...)):
             return {'message': 'Post actualizado', 'data': post}
 
     raise HTTPException(status_code=404, detail='Post no encontrado')
+
+
+# Este codigo quiere decir que salio bien pero no vamos a regresar nada de contenido
+@app.delete('/posts/{post_id}', status_code=204)
+def delete_post(post_id: int):
+    for index, post in enumerate(BLOG_POST):
+        if post_id == post['id']:
+            BLOG_POST.pop(index)
+            return
+    raise HTTPException(status_code=404, detail='Post no encontrado')
