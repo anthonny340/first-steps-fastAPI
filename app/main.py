@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, Body, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 app = FastAPI(title='Mini Blog')
@@ -32,6 +32,16 @@ class PostCreate(BaseModel):
         description='Contenido del post (min 10 caracteres)',
         examples=['Este es un contenido valido porque tiene 10 caracteres o mas']
     )
+
+    @field_validator('title')
+    @classmethod
+    def not_allowed_title(cls, value: str) -> str:
+        forbidden_words = ['spam', 'fake', 'test',
+                           'dummy', 'banned', 'prohibited']
+        if value.lower() in forbidden_words:
+            raise ValueError(
+                f'El titulo no puede contener la palabra "{value}" no es permitido (NOT ALLOWED)')
+        return value
 
 
 class PostUpdate(BaseModel):
