@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, Body, HTTPException
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List
+from typing import Optional, List, Union
 
 app = FastAPI(title='Mini Blog')
 
@@ -15,7 +15,7 @@ BLOG_POST = [
 
 class PostBase(BaseModel):
     title: str
-    content: Optional[str] = 'Sin contenido'
+    content: str
 
 
 class PostCreate(BaseModel):
@@ -85,7 +85,7 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
     return BLOG_POST
 
 
-@app.get('/posts/{post_id}')
+@app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary], response_description='Post encontrado')
 def get_post(post_id: int, incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
     '''
     Obtener los posts por ID o por coincidencia de contenido.
@@ -98,11 +98,10 @@ def get_post(post_id: int, incluide_content: bool = Query(default=True, descript
     for post in BLOG_POST:
         if post_id == post['id']:
             if incluide_content:
-                return {'data': post}
-            else:
-                return {'data': {'id': post['id'], 'title': post['title']}}
+                return post
+            return {'id': post['id'], 'title': post['title']}
 
-    return {'error': 'Post no encontrado'}
+    raise HTTPException(status_code=404, detail='Post no encontrado')
 
 
 @app.post('/posts')
