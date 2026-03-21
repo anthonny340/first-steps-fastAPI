@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, Body, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List, Union
 
 app = FastAPI(title='Mini Blog')
@@ -13,9 +13,22 @@ BLOG_POST = [
 ]
 
 
+class Tag(BaseModel):
+    name: str = Field(..., min_length=2, max_length=30,
+                      description='Nombre de la etiqueta')
+
+
+class Author(BaseModel):
+    name: str = Field(..., min_length=10, max_length=100,
+                      description='Nombre del autor')
+    email: EmailStr = Field(..., description='Correo electronico del autor')
+
+
 class PostBase(BaseModel):
     title: str
     content: str
+    tags: Optional[List[Tag]] = []
+    author: Optional[Author] = None
 
 
 class PostCreate(BaseModel):
@@ -32,6 +45,8 @@ class PostCreate(BaseModel):
         description='Contenido del post (min 10 caracteres)',
         examples=['Este es un contenido valido porque tiene 10 caracteres o mas']
     )
+    tags: List[Tag] = []
+    author: Optional[Author] = None
 
     @field_validator('title')
     @classmethod
@@ -104,7 +119,7 @@ def get_post(post_id: int, incluide_content: bool = Query(default=True, descript
     raise HTTPException(status_code=404, detail='Post no encontrado')
 
 
-@app.post('/posts')
+@app.post('/posts', response_model=PostPublic, response_description='Post creado (OK)')
 def create_post(post: PostCreate):
     '''
     Crear un post.
@@ -114,14 +129,18 @@ def create_post(post: PostCreate):
     :rtype: dict[str, Any]
     '''
     new_id = (BLOG_POST[-1]['id'] + 1) if BLOG_POST else 1
-    new_post = {'id': new_id,
-                'title': post.title, 'content': post.content}
+    new_post = {
+        'id': new_id,
+        'title': post.title,
+        'content': post.content,
+        'tags': [tag.model_dump() for tag in post.tags],
+        'author': post.author}
 
     BLOG_POST.append(new_post)
-    return {'message': 'Post creado', 'data': new_post}
+    return new_post
 
 
-@app.put('/posts/{post_id}')
+@app.put('/posts/{post_id}', response_model=PostPublic, response_description='Post actualizado (OK)', response_model_exclude_none=True)
 def update_post(post_id: int, data: PostUpdate):
     '''
     Actualiza un post existente.
@@ -146,7 +165,7 @@ def update_post(post_id: int, data: PostUpdate):
             if data.content:
                 post['content'] = data.content
 
-            return {'message': 'Post actualizado', 'data': post}
+            return post
 
     raise HTTPException(status_code=404, detail='Post no encontrado')
 
