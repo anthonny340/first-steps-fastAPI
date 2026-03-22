@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query, Body, HTTPException
 from pydantic import BaseModel, Field, field_validator, EmailStr
-from typing import Optional, List, Union
+from typing import Optional, Union
 
 app = FastAPI(title='Mini Blog')
 
@@ -27,7 +27,8 @@ class Author(BaseModel):
 class PostBase(BaseModel):
     title: str
     content: str
-    tags: Optional[List[Tag]] = []
+    # Field(default_factory=list) ayuda a crear siempre una lista de forma independiente
+    tags: Optional[list[Tag]] = Field(default_factory=list)  # []
     author: Optional[Author] = None
 
 
@@ -45,7 +46,7 @@ class PostCreate(BaseModel):
         description='Contenido del post (min 10 caracteres)',
         examples=['Este es un contenido valido porque tiene 10 caracteres o mas']
     )
-    tags: List[Tag] = []
+    tags: list[Tag] = Field(default_factory=list)
     author: Optional[Author] = None
 
     @field_validator('title')
@@ -60,7 +61,7 @@ class PostCreate(BaseModel):
 
 
 class PostUpdate(BaseModel):
-    title: str
+    title: Optional[str] = Field(None, min_length=3, max_length=100)
     content: Optional[str] = None
 
 
@@ -79,7 +80,7 @@ def home():
     return {'message': 'Bienvenidos a Mini Blog por Anthonny'}
 
 
-@app.get('/posts', response_model=List[PostPublic], summary="Lista todos los posts",
+@app.get('/posts', response_model=list[PostPublic], summary="Lista todos los posts",
          description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo."
          )
 def list_post(query: str | None = Query(default=None, description='Texto para buscar por titulo')):
