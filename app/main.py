@@ -194,11 +194,16 @@ def list_post(query: Optional[str] = Query(
     :rtype: (dict[str, Any] | dict[str, list[dict[str, Any]]])
     '''
     results = BLOG_POST
+    # Filtrado
     if query:
         results = [post for post in results if query.lower()
                    in post['title'].lower()]
-        return sorted(results, key=lambda post: post[order_by], reverse=(direction == 'desc'))
 
+    # Ordenamiento
+    results = sorted(
+        results, key=lambda post: post[order_by], reverse=(direction == 'desc'))
+
+    # Paginacion
     return results[offset: offset + limit]
 
 
