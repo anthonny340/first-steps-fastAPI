@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, Body, HTTPException, Path
 from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, Union, Literal
+from math import ceil
 
 app = FastAPI(title='Mini Blog')
 
@@ -155,12 +156,25 @@ class PostSummary(BaseModel):
     author: Optional[Author] = None
 
 
+class PaginatedPost(BaseModel):
+    page: int
+    per_page: int
+    total: int
+    total_page: int
+    has_prev: bool
+    has_next: bool
+    order_by: Literal['id', 'title']
+    direction: Literal['asc', 'desc']
+    search: Optional[str] = None
+    items: list[PostPublic]
+
+
 @app.get('/')
 def home():
     return {'message': 'Bienvenidos a Mini Blog por Anthonny'}
 
 
-@app.get('/posts', response_model=list[PostPublic], summary="Lista todos los posts",
+@app.get('/posts', response_model=PaginatedPost, summary="Lista todos los posts",
          description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo."
          )
 def list_post(query: Optional[str] = Query(
@@ -171,12 +185,12 @@ def list_post(query: Optional[str] = Query(
     pattern=r"^[\w\sáéíóúÁÉÍÓÚÜü-]+$",
     description='Texto para buscar por titulo'
 ),
-    limit: int = Query(
+    per_page: int = Query(
         10, ge=1, le=50, description='Numero de resultados (1-50)'
 ),
-    offset: int = Query(
-        0, ge=0,
-        description='Elementos a saltar antes de empezar la lista'
+    page: int = Query(
+        1, ge=1,
+        description='Numero de pagina (Mayor o igual a 1)'
 ),
     order_by: Literal['id', 'title'] = Query(
         'id', description='Campo de orden'
@@ -199,12 +213,40 @@ def list_post(query: Optional[str] = Query(
         results = [post for post in results if query.lower()
                    in post['title'].lower()]
 
+    # Obteniendo variables para hacer calculos
+    total = len(results)
+    total_pages = ceil(total/per_page) if total > 0 else 0
+
+    if total_pages == 0:
+        current_page = 1
+    else:
+        current_page = min(page, total_pages)
+
     # Ordenamiento
     results = sorted(
         results, key=lambda post: post[order_by], reverse=(direction == 'desc'))
 
-    # Paginacion
-    return results[offset: offset + limit]
+    # Paginacion(Slicing) - Items
+    if total_pages == 0:
+        items = []
+    else:
+        start = (current_page - 1) * per_page
+        items = results[start: start + per_page]
+
+    has_prev = current_page > 1
+    has_next = current_page < total_pages if total_pages > 0 else False
+
+    return PaginatedPost(
+        page=current_page,
+        per_page=per_page,
+        total=total,
+        total_page=total_pages,
+        has_prev=has_prev,
+        has_next=has_next,
+        order_by=order_by,
+        direction=direction,
+        search=query,
+        items=items)
 
 
 @app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
