@@ -79,7 +79,9 @@ def home():
     return {'message': 'Bienvenidos a Mini Blog por Anthonny'}
 
 
-@app.get('/posts', response_model=List[PostPublic])
+@app.get('/posts', response_model=List[PostPublic], summary="Lista todos los posts",
+         description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo."
+         )
 def list_post(query: str | None = Query(default=None, description='Texto para buscar por titulo')):
     '''
     Obtener los posts.
@@ -100,10 +102,14 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
     return BLOG_POST
 
 
-@app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary], response_description='Post encontrado')
+@app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
+         response_description='Post encontrado',
+         summary="Busca un post por ID",
+         description="Devuelve el post encontrado. Se puede especificar si se quiere visualizar el contenido."
+         )
 def get_post(post_id: int, incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
     '''
-    Obtener los posts por ID o por coincidencia de contenido.
+    Obtener los posts por ID.
 
     :param int post_id: (Path) ID del post.
     :param bool incluide_content: (Query) Incluir el contentenido del post.
