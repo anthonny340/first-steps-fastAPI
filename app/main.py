@@ -1,15 +1,93 @@
-from fastapi import FastAPI, Query, Body, HTTPException
+from fastapi import FastAPI, Query, Body, HTTPException, Path
 from pydantic import BaseModel, Field, field_validator, EmailStr
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 app = FastAPI(title='Mini Blog')
 
 BLOG_POST = [
-    {'id': 1, 'title': 'Hola desde fastAPI',
-        'content': 'Mi primer post con fastAPI'},
-    {'id': 2, 'title': 'Segundo post desde fastAPI',
-        'content': 'explorando fastAPI'},
-    {'id': 3, 'title': 'Tercer post desde fastAPI', 'content': 'explorando fastAPI'},
+    {'id': 1, 'title': 'Hola desde FastAPI',
+        'content': 'Mi primer post con FastAPI'},
+    {'id': 2, 'title': 'Segundo post desde FastAPI',
+        'content': 'Explorando FastAPI'},
+    {'id': 3, 'title': 'Tercer post desde FastAPI', 'content': 'Explorando FastAPI'},
+    {'id': 4, 'title': 'Creando mi primera API',
+        'content': 'FastAPI hace todo más sencillo'},
+    {'id': 5, 'title': 'Probando rutas dinámicas',
+        'content': 'Aprendiendo a manejar parámetros'},
+    {'id': 6, 'title': 'Usando Pydantic',
+        'content': 'Validación de datos con modelos'},
+    {'id': 7, 'title': 'Métodos GET y POST',
+        'content': 'Primeros pasos con métodos HTTP'},
+    {'id': 8, 'title': 'Conectando FastAPI con una base de datos',
+        'content': 'Probando SQLite'},
+    {'id': 9, 'title': 'Middleware en FastAPI',
+        'content': 'Interceptando requests'},
+    {'id': 10, 'title': 'Aprendiendo sobre CORS',
+        'content': 'Configurando acceso entre dominios'},
+    {'id': 11, 'title': 'Documentación automática',
+        'content': 'Swagger UI es increíble'},
+    {'id': 12, 'title': 'Probando Redoc',
+        'content': 'Otra forma de documentar APIs'},
+    {'id': 13, 'title': 'Creando modelos más complejos',
+        'content': 'Pydantic es muy flexible'},
+    {'id': 14, 'title': 'Usando Query Parameters',
+        'content': 'Filtrando datos desde la URL'},
+    {'id': 15, 'title': 'Path Parameters avanzados',
+        'content': 'Validación y conversión automática'},
+    {'id': 16, 'title': 'Aprendiendo sobre Response Models',
+        'content': 'Controlando la salida de datos'},
+    {'id': 17, 'title': 'Manejo de errores', 'content': 'Usando HTTPException'},
+    {'id': 18, 'title': 'Custom Exception Handlers',
+        'content': 'Respuestas personalizadas'},
+    {'id': 19, 'title': 'Background Tasks', 'content': 'Procesos en segundo plano'},
+    {'id': 20, 'title': 'Subiendo archivos',
+        'content': 'Manejo de File y UploadFile'},
+    {'id': 21, 'title': 'Descargando archivos',
+        'content': 'StreamingResponse en acción'},
+    {'id': 22, 'title': 'Autenticación básica',
+        'content': 'Primeros pasos con seguridad'},
+    {'id': 23, 'title': 'OAuth2 con Password Flow',
+        'content': 'Implementando login'},
+    {'id': 24, 'title': 'JWT en FastAPI', 'content': 'Tokens para autenticación'},
+    {'id': 25, 'title': 'Dependencias en FastAPI', 'content': 'Reutilizando lógica'},
+    {'id': 26, 'title': 'Dependencias con clases',
+        'content': 'Organizando mejor el código'},
+    {'id': 27, 'title': 'Routers en FastAPI', 'content': 'Modularizando la API'},
+    {'id': 28, 'title': 'Versionando la API',
+        'content': 'Buenas prácticas para crecer'},
+    {'id': 29, 'title': 'Probando WebSockets',
+        'content': 'Comunicación en tiempo real'},
+    {'id': 30, 'title': 'FastAPI y asyncio',
+        'content': 'Ventajas del código asíncrono'},
+    {'id': 31, 'title': 'Integrando SQLAlchemy',
+        'content': 'ORM para bases de datos'},
+    {'id': 32, 'title': 'Migraciones con Alembic',
+        'content': 'Controlando cambios en el esquema'},
+    {'id': 33, 'title': 'CRUD completo', 'content': 'Creando operaciones básicas'},
+    {'id': 34, 'title': 'Paginación de resultados',
+        'content': 'Mejorando la experiencia del usuario'},
+    {'id': 35, 'title': 'Filtros avanzados', 'content': 'Consultas más potentes'},
+    {'id': 36, 'title': 'Testing con pytest', 'content': 'Probando endpoints'},
+    {'id': 37, 'title': 'TestClient de FastAPI', 'content': 'Simulando peticiones'},
+    {'id': 38, 'title': 'Deploy en Uvicorn', 'content': 'Servidor ASGI ligero'},
+    {'id': 39, 'title': 'Deploy en Gunicorn', 'content': 'Producción con workers'},
+    {'id': 40, 'title': 'Deploy en Docker', 'content': 'Contenerizando la API'},
+    {'id': 41, 'title': 'FastAPI en la nube', 'content': 'Probando con Render'},
+    {'id': 42, 'title': 'FastAPI y Nginx',
+        'content': 'Configurando un reverse proxy'},
+    {'id': 43, 'title': 'Optimización de rendimiento',
+        'content': 'Mejorando tiempos de respuesta'},
+    {'id': 44, 'title': 'Cache con Redis', 'content': 'Acelerando consultas'},
+    {'id': 45, 'title': 'Rate limiting', 'content': 'Controlando el tráfico'},
+    {'id': 46, 'title': 'Logging avanzado', 'content': 'Monitoreando la API'},
+    {'id': 47, 'title': 'Buenas prácticas con FastAPI',
+        'content': 'Código limpio y mantenible'},
+    {'id': 48, 'title': 'Estructura profesional de proyecto',
+        'content': 'Organizando carpetas y módulos'},
+    {'id': 49, 'title': 'FastAPI + Frontend',
+        'content': 'Conectando con React o Vue'},
+    {'id': 50, 'title': 'Conclusiones del viaje con FastAPI',
+        'content': 'Un framework rápido y elegante'},
 ]
 
 
@@ -73,6 +151,8 @@ class PostPublic(PostBase):
 class PostSummary(BaseModel):
     id: int
     title: str
+    tags: Optional[list[Tag]] = Field(default_factory=list)  # []
+    author: Optional[Author] = None
 
 
 @app.get('/')
@@ -83,7 +163,29 @@ def home():
 @app.get('/posts', response_model=list[PostPublic], summary="Lista todos los posts",
          description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo."
          )
-def list_post(query: str | None = Query(default=None, description='Texto para buscar por titulo')):
+def list_post(query: Optional[str] = Query(
+    default=None,
+    alias='search',
+    min_length=3,
+    max_length=50,
+    pattern=r"^[\w\sáéíóúÁÉÍÓÚÜü-]+$",
+    description='Texto para buscar por titulo'
+),
+    limit: int = Query(
+        10, ge=1, le=50, description='Numero de resultados (1-50)'
+),
+    offset: int = Query(
+        0, ge=0,
+        description='Elementos a saltar antes de empezar la lista'
+),
+    order_by: Literal['id', 'title'] = Query(
+        'id', description='Campo de orden'
+),
+    direction: Literal['asc', 'desc'] = Query(
+        'asc', description='Direccion de orden'
+)
+
+):
     '''
     Obtener los posts.
 
@@ -91,16 +193,13 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
     :return: Diccionario de posts coincidentes.
     :rtype: (dict[str, Any] | dict[str, list[dict[str, Any]]])
     '''
+    results = BLOG_POST
     if query:
-        results = [post for post in BLOG_POST if query.lower()
+        results = [post for post in results if query.lower()
                    in post['title'].lower()]
-        # Se pude simplificar la logica con un list comprehension
-        # for post in BLOG_POST:
-        #     if query.lower() in post['title'].lower():
-        #         results.append(post)
-        return results
+        return sorted(results, key=lambda post: post[order_by], reverse=(direction == 'desc'))
 
-    return BLOG_POST
+    return results[offset: offset + limit]
 
 
 @app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
@@ -108,7 +207,11 @@ def list_post(query: str | None = Query(default=None, description='Texto para bu
          summary="Busca un post por ID",
          description="Devuelve el post encontrado. Se puede especificar si se quiere visualizar el contenido."
          )
-def get_post(post_id: int, incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
+def get_post(post_id: int = Path(
+    ..., ge=1, title='ID del post',
+    description='Identificador entero del post. Debe ser mayor a uno',
+    example=1
+), incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
     '''
     Obtener los posts por ID.
 
@@ -121,7 +224,9 @@ def get_post(post_id: int, incluide_content: bool = Query(default=True, descript
         if post_id == post['id']:
             if incluide_content:
                 return post
-            return {'id': post['id'], 'title': post['title']}
+            # Conversion del diccionario a modelo PostSummary
+            post = PostSummary(**post)
+            return post
 
     raise HTTPException(status_code=404, detail='Post no encontrado')
 
