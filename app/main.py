@@ -1,7 +1,58 @@
-from fastapi import FastAPI, Query, Body, HTTPException, Path
-from pydantic import BaseModel, Field, field_validator, EmailStr
+import os
+from datetime import datetime
+from fastapi import FastAPI, Query, Body, HTTPException, Path, status, Depends
+from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
+from sqlalchemy import create_engine, Integer, String, Text, DateTime
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.exc import SQLAlchemyError
+
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./blog.db')
+print(f'Conectado a: {DATABASE_URL}')
+
+engine_kwargs = {}
+if DATABASE_URL.startswith('sqlite'):
+    engine_kwargs['connect_args'] = {'check_same_thread': False}
+
+# echo muestra el SQL ejecutado, util para ver las consultas que se estan haciendo
+# future en True lo que dice es que queremos ocuparar la sintaxis moderna de SQLAlchemy 2
+engine = create_engine(DATABASE_URL, echo=True, future=True, **engine_kwargs)
+
+# autoflush lo que hace es no enviar cambios automaticos hasta hacer el commit
+# autocommit en False lo que hace es que tenga control explicito sobre el commit
+SessionLocal = sessionmaker(
+    bind=engine, autoflush=False, autocommit=False, class_=Session)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class PostORM(Base):
+    __tablename__ = 'post'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    create_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now())
+
+
+# Esto unicamnete es para nuestro entorno de desarrollo, solo va a crear las
+# tablas en caso de que no exista
+Base.metadata.create_all(bind=engine)  # dev
+
+# Para produccion, no se ocupa esto, se ocupa migraciones
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 app = FastAPI(title='Mini Blog')
 
@@ -147,6 +198,8 @@ class PostUpdate(BaseModel):
 class PostPublic(PostBase):
     # Clases para dar formato a la salida de nuestros metodos HTTP
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostSummary(BaseModel):
@@ -300,8 +353,8 @@ def get_post(post_id: int = Path(
     raise HTTPException(status_code=404, detail='Post no encontrado')
 
 
-@app.post('/posts', response_model=PostPublic, response_description='Post creado (OK)')
-def create_post(post: PostCreate):
+@app.post('/posts', response_model=PostPublic, response_description='Post creado (OK)', status_code=status.HTTP_201_CREATED)
+def create_post(post: PostCreate, db: Session = Depends(get_db)):
     '''
     Crear un post.
 
@@ -309,16 +362,16 @@ def create_post(post: PostCreate):
     :return: Diccionario con el post actualizado.
     :rtype: dict[str, Any]
     '''
-    new_id = (BLOG_POST[-1]['id'] + 1) if BLOG_POST else 1
-    new_post = {
-        'id': new_id,
-        'title': post.title,
-        'content': post.content,
-        'tags': [tag.model_dump() for tag in post.tags],
-        'author': post.author}
-
-    BLOG_POST.append(new_post)
-    return new_post
+    new_post = PostORM(title=post.title, content=post.content)
+    try:
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return new_post
+    except SQLAlchemyError:
+        print('SALTO UN ERROR TIPO SQLAlchemyError')
+        db.rollback()
+        raise HTTPException(status_code=500, detail='Error al crear el post')
 
 
 @app.put('/posts/{post_id}', response_model=PostPublic, response_description='Post actualizado (OK)', response_model_exclude_none=True)
