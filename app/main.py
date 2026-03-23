@@ -177,27 +177,36 @@ def home():
 @app.get('/posts', response_model=PaginatedPost, summary="Lista todos los posts",
          description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo."
          )
-def list_post(query: Optional[str] = Query(
-    default=None,
-    alias='search',
-    min_length=3,
-    max_length=50,
-    pattern=r"^[\w\sáéíóúÁÉÍÓÚÜü-]+$",
-    description='Texto para buscar por titulo'
-),
+def list_post(
+    # Esto nos ayuda a en un entorno de produccion queremos implementar otros parametros
+    # seguimos manteniendo la misma funcionalidad sin embargo avisamos al cliente que pronto
+    # modificaremos y eliminaremos ese parametro para que otro (mejorado) tome su lugar
+    text: Optional[str] = Query(
+        default=None,
+        deprecated=True,  # Con esto avisamos que este campo esta por ser removido
+        description='Parametro obsoleto, usa "query o search" en su lugar'
+    ),
+    query: Optional[str] = Query(
+        default=None,
+        alias='search',
+        min_length=3,
+        max_length=50,
+        pattern=r"^[\w\sáéíóúÁÉÍÓÚÜü-]+$",
+        description='Texto para buscar por titulo'
+    ),
     per_page: int = Query(
         10, ge=1, le=50, description='Numero de resultados (1-50)'
-),
+    ),
     page: int = Query(
         1, ge=1,
         description='Numero de pagina (Mayor o igual a 1)'
-),
+    ),
     order_by: Literal['id', 'title'] = Query(
         'id', description='Campo de orden'
-),
+    ),
     direction: Literal['asc', 'desc'] = Query(
         'asc', description='Direccion de orden'
-)
+    )
 
 ):
     '''
@@ -208,6 +217,11 @@ def list_post(query: Optional[str] = Query(
     :rtype: (dict[str, Any] | dict[str, list[dict[str, Any]]])
     '''
     results = BLOG_POST
+
+    # En caso de que tengamos un parametro deprecated y no queremos afectar al funcionamiento de terceros que
+    # lo usen lo queramos mantener hasta en un proximo realease eliminarlo por completo
+    query = query or text
+
     # Filtrado
     if query:
         results = [post for post in results if query.lower()
