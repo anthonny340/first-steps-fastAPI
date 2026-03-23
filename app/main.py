@@ -7,7 +7,7 @@ app = FastAPI(title='Mini Blog')
 
 BLOG_POST = [
     {'id': 1, 'title': 'Hola desde FastAPI',
-        'content': 'Mi primer post con FastAPI'},
+        'content': 'Mi primer post con FastAPI', 'tags': [{'name': 'python'}, {'name': 'java'}]},
     {'id': 2, 'title': 'Segundo post desde FastAPI',
         'content': 'Explorando FastAPI'},
     {'id': 3, 'title': 'Tercer post desde FastAPI', 'content': 'Explorando FastAPI'},
@@ -16,9 +16,9 @@ BLOG_POST = [
     {'id': 5, 'title': 'Probando rutas dinámicas',
         'content': 'Aprendiendo a manejar parámetros'},
     {'id': 6, 'title': 'Usando Pydantic',
-        'content': 'Validación de datos con modelos'},
+        'content': 'Validación de datos con modelos', 'tags': [{'name': 'python'}, {'name': 'java'}]},
     {'id': 7, 'title': 'Métodos GET y POST',
-        'content': 'Primeros pasos con métodos HTTP'},
+        'content': 'Primeros pasos con métodos HTTP', 'tags': [{'name': 'python'}, {'name': 'java'}]},
     {'id': 8, 'title': 'Conectando FastAPI con una base de datos',
         'content': 'Probando SQLite'},
     {'id': 9, 'title': 'Middleware en FastAPI',
@@ -247,6 +247,14 @@ def list_post(query: Optional[str] = Query(
         direction=direction,
         search=query,
         items=items)
+
+
+@app.get('/post/by-tags', response_model=list[PostPublic])
+def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o mas etiquetas.', example='?tags=python&tags=fastapi')):
+
+    tags_lower = [tag.lower() for tag in tags]
+
+    return [post for post in BLOG_POST if any(tag['name'].lower() in tags_lower for tag in post.get('tags', []))]
 
 
 @app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
