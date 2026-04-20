@@ -4,7 +4,7 @@ from fastapi import FastAPI, Query, Body, HTTPException, Path, status, Depends
 from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
-from sqlalchemy import create_engine, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -259,7 +259,8 @@ def list_post(
     ),
     direction: Literal['asc', 'desc'] = Query(
         'asc', description='Direccion de orden'
-    )
+    ),
+    db: Session = Depends(get_db)
 
 ):
     '''
@@ -269,7 +270,7 @@ def list_post(
     :return: Diccionario de posts coincidentes.
     :rtype: (dict[str, Any] | dict[str, list[dict[str, Any]]])
     '''
-    results = BLOG_POST
+    results = select(PostORM)
 
     # En caso de que tengamos un parametro deprecated y no queremos afectar al funcionamiento de terceros que
     # lo usen lo queramos mantener hasta en un proximo realease eliminarlo por completo
@@ -277,28 +278,36 @@ def list_post(
 
     # Filtrado
     if query:
-        results = [post for post in results if query.lower()
-                   in post['title'].lower()]
+        results = results.where(PostORM.title.ilike(f'%{query}%'))
 
     # Obteniendo variables para hacer calculos
-    total = len(results)
+    total = db.scalar(select(func.count()).select_from(
+        results.subquery())) or 0
     total_pages = ceil(total/per_page) if total > 0 else 0
 
+    current_page = 1 if total_pages == 0 else min(page, total_pages)
     if total_pages == 0:
         current_page = 1
     else:
         current_page = min(page, total_pages)
 
     # Ordenamiento
-    results = sorted(
-        results, key=lambda post: post[order_by], reverse=(direction == 'desc'))
+    if order_by == 'id':
+        order_col = PostORM.id
+    else:
+        order_col = func.lower(PostORM.title)
+
+    results = results.order_by(
+        order_col.asc() if direction == 'asc' else order_col.desc())
 
     # Paginacion(Slicing) - Items
     if total_pages == 0:
-        items = []
+        items: list[PostORM] = []
     else:
         start = (current_page - 1) * per_page
-        items = results[start: start + per_page]
+        query_sql = results.limit(per_page).offset(
+            start)
+        items = db.execute(query_sql).scalars().all()
 
     has_prev = current_page > 1
     has_next = current_page < total_pages if total_pages > 0 else False
