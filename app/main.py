@@ -208,6 +208,8 @@ class PostSummary(BaseModel):
     tags: Optional[list[Tag]] = Field(default_factory=list)  # []
     author: Optional[Author] = None
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class PaginatedPost(BaseModel):
     page: int
@@ -342,7 +344,7 @@ def get_post(post_id: int = Path(
     ..., ge=1, title='ID del post',
     description='Identificador entero del post. Debe ser mayor a uno',
     example=1
-), incluide_content: bool = Query(default=True, description='Incluir o no el contenido')):
+), incluide_content: bool = Query(default=True, description='Incluir o no el contenido'), db: Session = Depends(get_db)):
     '''
     Obtener los posts por ID.
 
@@ -351,15 +353,19 @@ def get_post(post_id: int = Path(
     :return: Diccionario de posts coincidentes.
     :rtype: (dict[str, dict[str, Any]] | dict[str, str])
     '''
-    for post in BLOG_POST:
-        if post_id == post['id']:
-            if incluide_content:
-                return post
-            # Conversion del diccionario a modelo PostSummary
-            post = PostSummary(**post)
-            return post
+    # post = db.get(PostORM, post_id) #Opcion 1
 
-    raise HTTPException(status_code=404, detail='Post no encontrado')
+    # Opcion 2 mas flexible a la hora de realizar busquedas
+    post_find = select(PostORM).where(PostORM.id == post_id)
+    post = db.execute(post_find).scalar_one_or_none()
+
+    if (not post):
+        raise HTTPException(status_code=404, detail='Post no encontrado')
+
+    if incluide_content:
+        return PostPublic.model_validate(post, from_attributes=True)
+
+    return PostSummary.model_validate(post, from_attributes=True)
 
 
 @app.post('/posts', response_model=PostPublic, response_description='Post creado (OK)', status_code=status.HTTP_201_CREATED)

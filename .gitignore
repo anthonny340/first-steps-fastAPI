@@ -1,1 +1,36 @@
-app/__pycache__/main.cpython-313.pyc
+# Entorno virtual
+.venv/
+
+.vscode/
+
+# Python cache
+__pycache__/
+*.pyc
+*.py[cod]
+*.pyo
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Entornos y secretos
+.env
+.env.*
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Migrations (opcional si usas alembic)
+# migrations/versions/*.pyc
+
+# Poetry (NO ignorar pyproject.toml ni poetry.lock)
