@@ -7,6 +7,9 @@ from math import ceil
 from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.exc import SQLAlchemyError
+from theme import dark_css
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse
 
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./blog.db')
 print(f'Conectado a: {DATABASE_URL}')
@@ -54,7 +57,9 @@ def get_db():
         db.close()
 
 
-app = FastAPI(title='Mini Blog')
+DARK_DOCS = True
+
+app = FastAPI(docs_url=None if DARK_DOCS else "/docs")
 
 BLOG_POST = [
     {'id': 1, 'title': 'Hola desde FastAPI',
@@ -222,6 +227,18 @@ class PaginatedPost(BaseModel):
     direction: Literal['asc', 'desc']
     search: Optional[str] = None
     items: list[PostPublic]
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_docs():
+    html = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title="Docs"
+    ).body.decode("utf-8")
+
+    html = html.replace("</head>", f"{dark_css}</head>")
+
+    return HTMLResponse(html)
 
 
 @app.get('/')
