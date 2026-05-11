@@ -4,9 +4,9 @@ from fastapi import FastAPI, Query, Body, HTTPException, Path, status, Depends
 from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
-from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func
+from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from theme import dark_css
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
@@ -34,6 +34,7 @@ class Base(DeclarativeBase):
 
 class PostORM(Base):
     __tablename__ = 'post'
+    __table_args__ = (UniqueConstraint("title", name="unique_post_title"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
@@ -145,10 +146,12 @@ class PaginatedPost(BaseModel):
 
 @app.get("/docs", include_in_schema=False)
 async def custom_docs():
-    html = get_swagger_ui_html(
-        openapi_url=app.openapi_url,
+    get_swagger_response = get_swagger_ui_html(
+        openapi_url=app.openapi_url or "/openapi.json",
         title="Docs"
-    ).body.decode("utf-8")
+    )
+
+    html = bytes(get_swagger_response.body).decode("utf-8")
 
     html = html.replace("</head>", f"{dark_css}</head>")
 
@@ -235,12 +238,16 @@ def list_post(
 
     # Paginacion(Slicing) - Items
     if total_pages == 0:
-        items: list[PostORM] = []
+        items: list[PostPublic] = []
     else:
         start = (current_page - 1) * per_page
         query_sql = results.limit(per_page).offset(
             start)
-        items = db.execute(query_sql).scalars().all()
+
+        items = [
+            PostPublic.model_validate(post, from_attributes=True)
+            for post in db.execute(query_sql).scalars().all()
+        ]
 
     has_prev = current_page > 1
     has_next = current_page < total_pages if total_pages > 0 else False
@@ -263,7 +270,7 @@ def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o
 
     tags_lower = [tag.lower() for tag in tags]
 
-    return [post for post in BLOG_POST if any(tag['name'].lower() in tags_lower for tag in post.get('tags', []))]
+    # return [post for post in BLOG_POST if any(tag['name'].lower() in tags_lower for tag in post.get('tags', []))]
 
 
 @app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
@@ -314,6 +321,11 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_post)
         return new_post
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail='Ese titulo ya existe, pruebe otro')
+
     except SQLAlchemyError:
         print('SALTO UN ERROR TIPO SQLAlchemyError')
         db.rollback()
@@ -356,6 +368,10 @@ def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db)):
 
         return PostPublic.model_validate(post, from_attributes=True)
 
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="El titulo ya existe, debe cambiar el titulo")
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error al guardar el post")
