@@ -61,92 +61,6 @@ DARK_DOCS = True
 
 app = FastAPI(docs_url=None if DARK_DOCS else "/docs")
 
-BLOG_POST = [
-    {'id': 1, 'title': 'Hola desde FastAPI',
-        'content': 'Mi primer post con FastAPI', 'tags': [{'name': 'python'}, {'name': 'java'}]},
-    {'id': 2, 'title': 'Segundo post desde FastAPI',
-        'content': 'Explorando FastAPI'},
-    {'id': 3, 'title': 'Tercer post desde FastAPI', 'content': 'Explorando FastAPI'},
-    {'id': 4, 'title': 'Creando mi primera API',
-        'content': 'FastAPI hace todo más sencillo'},
-    {'id': 5, 'title': 'Probando rutas dinámicas',
-        'content': 'Aprendiendo a manejar parámetros'},
-    {'id': 6, 'title': 'Usando Pydantic',
-        'content': 'Validación de datos con modelos', 'tags': [{'name': 'python'}, {'name': 'java'}]},
-    {'id': 7, 'title': 'Métodos GET y POST',
-        'content': 'Primeros pasos con métodos HTTP', 'tags': [{'name': 'python'}, {'name': 'java'}]},
-    {'id': 8, 'title': 'Conectando FastAPI con una base de datos',
-        'content': 'Probando SQLite'},
-    {'id': 9, 'title': 'Middleware en FastAPI',
-        'content': 'Interceptando requests'},
-    {'id': 10, 'title': 'Aprendiendo sobre CORS',
-        'content': 'Configurando acceso entre dominios'},
-    {'id': 11, 'title': 'Documentación automática',
-        'content': 'Swagger UI es increíble'},
-    {'id': 12, 'title': 'Probando Redoc',
-        'content': 'Otra forma de documentar APIs'},
-    {'id': 13, 'title': 'Creando modelos más complejos',
-        'content': 'Pydantic es muy flexible'},
-    {'id': 14, 'title': 'Usando Query Parameters',
-        'content': 'Filtrando datos desde la URL'},
-    {'id': 15, 'title': 'Path Parameters avanzados',
-        'content': 'Validación y conversión automática'},
-    {'id': 16, 'title': 'Aprendiendo sobre Response Models',
-        'content': 'Controlando la salida de datos'},
-    {'id': 17, 'title': 'Manejo de errores', 'content': 'Usando HTTPException'},
-    {'id': 18, 'title': 'Custom Exception Handlers',
-        'content': 'Respuestas personalizadas'},
-    {'id': 19, 'title': 'Background Tasks', 'content': 'Procesos en segundo plano'},
-    {'id': 20, 'title': 'Subiendo archivos',
-        'content': 'Manejo de File y UploadFile'},
-    {'id': 21, 'title': 'Descargando archivos',
-        'content': 'StreamingResponse en acción'},
-    {'id': 22, 'title': 'Autenticación básica',
-        'content': 'Primeros pasos con seguridad'},
-    {'id': 23, 'title': 'OAuth2 con Password Flow',
-        'content': 'Implementando login'},
-    {'id': 24, 'title': 'JWT en FastAPI', 'content': 'Tokens para autenticación'},
-    {'id': 25, 'title': 'Dependencias en FastAPI', 'content': 'Reutilizando lógica'},
-    {'id': 26, 'title': 'Dependencias con clases',
-        'content': 'Organizando mejor el código'},
-    {'id': 27, 'title': 'Routers en FastAPI', 'content': 'Modularizando la API'},
-    {'id': 28, 'title': 'Versionando la API',
-        'content': 'Buenas prácticas para crecer'},
-    {'id': 29, 'title': 'Probando WebSockets',
-        'content': 'Comunicación en tiempo real'},
-    {'id': 30, 'title': 'FastAPI y asyncio',
-        'content': 'Ventajas del código asíncrono'},
-    {'id': 31, 'title': 'Integrando SQLAlchemy',
-        'content': 'ORM para bases de datos'},
-    {'id': 32, 'title': 'Migraciones con Alembic',
-        'content': 'Controlando cambios en el esquema'},
-    {'id': 33, 'title': 'CRUD completo', 'content': 'Creando operaciones básicas'},
-    {'id': 34, 'title': 'Paginación de resultados',
-        'content': 'Mejorando la experiencia del usuario'},
-    {'id': 35, 'title': 'Filtros avanzados', 'content': 'Consultas más potentes'},
-    {'id': 36, 'title': 'Testing con pytest', 'content': 'Probando endpoints'},
-    {'id': 37, 'title': 'TestClient de FastAPI', 'content': 'Simulando peticiones'},
-    {'id': 38, 'title': 'Deploy en Uvicorn', 'content': 'Servidor ASGI ligero'},
-    {'id': 39, 'title': 'Deploy en Gunicorn', 'content': 'Producción con workers'},
-    {'id': 40, 'title': 'Deploy en Docker', 'content': 'Contenerizando la API'},
-    {'id': 41, 'title': 'FastAPI en la nube', 'content': 'Probando con Render'},
-    {'id': 42, 'title': 'FastAPI y Nginx',
-        'content': 'Configurando un reverse proxy'},
-    {'id': 43, 'title': 'Optimización de rendimiento',
-        'content': 'Mejorando tiempos de respuesta'},
-    {'id': 44, 'title': 'Cache con Redis', 'content': 'Acelerando consultas'},
-    {'id': 45, 'title': 'Rate limiting', 'content': 'Controlando el tráfico'},
-    {'id': 46, 'title': 'Logging avanzado', 'content': 'Monitoreando la API'},
-    {'id': 47, 'title': 'Buenas prácticas con FastAPI',
-        'content': 'Código limpio y mantenible'},
-    {'id': 48, 'title': 'Estructura profesional de proyecto',
-        'content': 'Organizando carpetas y módulos'},
-    {'id': 49, 'title': 'FastAPI + Frontend',
-        'content': 'Conectando con React o Vue'},
-    {'id': 50, 'title': 'Conclusiones del viaje con FastAPI',
-        'content': 'Un framework rápido y elegante'},
-]
-
 
 class Tag(BaseModel):
     name: str = Field(..., min_length=2, max_length=30,
@@ -407,7 +321,7 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
 
 
 @app.put('/posts/{post_id}', response_model=PostPublic, response_description='Post actualizado (OK)', response_model_exclude_none=True)
-def update_post(post_id: int, data: PostUpdate):
+def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db)):
     '''
     Actualiza un post existente.
 
@@ -420,25 +334,36 @@ def update_post(post_id: int, data: PostUpdate):
         Si se usa ``exclude_unset=True``, solo se actualizarán los campos
         enviados por el usuario.
     '''
-    for post in BLOG_POST:
-        if post_id == post['id']:
-            # Podemos converitir data que es tipo PostUpdate en un diccionario con la siguiente linea de codigo
-            # playload = data.model_dump(exclude_unset=True)
-            # exclude_unset=True sirve para excluir los parametros que no envia el usuario, evitando la asignacion de None a los parametros no enviados
-            if data.title:
-                post['title'] = data.title
 
-            if data.content:
-                post['content'] = data.content
+    # Paso 1: Obtener el post enviado por el usuario
+    post = db.get(PostORM, post_id)
 
-            return post
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
 
-    raise HTTPException(status_code=404, detail='Post no encontrado')
+    # Paso 2: Filtrar los campos a actualizar evitando que se modifiquen campos que le usuario no ha enviado
+    updates = data.model_dump(exclude_unset=True)
+
+    # Paso 3: Actualizar el post con la nueva informacion
+    for key, value in updates.items():
+        setattr(post, key, value)
+
+    # Paso 4: Mandar a guardar el post actualizado a la base de datos
+    try:
+        db.add(post)
+        db.commit()
+        db.refresh(post)
+
+        return PostPublic.model_validate(post, from_attributes=True)
+
+    except SQLAlchemyError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error al guardar el post")
 
 
 # Este codigo quiere decir que salio bien pero no vamos a regresar nada de contenido
-@app.delete('/posts/{post_id}', status_code=204)
-def delete_post(post_id: int):
+@app.delete('/posts/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Session = Depends(get_db)):
     '''
     Elimina un post existente.
 
@@ -448,8 +373,12 @@ def delete_post(post_id: int):
     .. warning::
         Lanzara un status_code ``404``, si no se encuetra el post.
     '''
-    for index, post in enumerate(BLOG_POST):
-        if post_id == post['id']:
-            BLOG_POST.pop(index)
-            return
-    raise HTTPException(status_code=404, detail='Post no encontrado')
+
+    post_find = select(PostORM).where(PostORM.id == post_id)
+    post = db.execute(post_find).scalar_one_or_none()
+
+    if not post:
+        raise HTTPException(status_code=404, detail='Post no encontrado')
+
+    db.delete(post)
+    db.commit()
