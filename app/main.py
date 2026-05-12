@@ -4,8 +4,8 @@ from fastapi import FastAPI, Query, Body, HTTPException, Path, status, Depends
 from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
-from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import ForeignKey, create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint, Table, Column
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from theme import dark_css
 from fastapi.openapi.docs import get_swagger_ui_html
@@ -32,6 +32,23 @@ class Base(DeclarativeBase):
     pass
 
 
+post_tags = Table(
+    "posts_tags",
+    Base.metadata,
+
+    Column(
+        "post_id",
+        ForeignKey("posts.id"),
+        primary_key=True
+    ),
+    Column(
+        "tag_id",
+        ForeignKey("tags.id"),
+        primary_key=True,
+    ),
+)
+
+
 class PostORM(Base):
     __tablename__ = 'post'
     __table_args__ = (UniqueConstraint("title", name="unique_post_title"),)
@@ -41,6 +58,45 @@ class PostORM(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     create_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now())
+
+    author: Mapped[Optional["AuthorORM"]] = relationship(
+        back_populates='posts',)
+    author_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("authors.id"), nullable=True)
+
+    tags: Mapped[list["TagORM"]] = relationship(
+        secondary=post_tags,
+        back_populates="posts"
+    )
+
+
+class TagORM(Base):
+    __tablename__ = "tags"
+    # __table_args__ = (UniqueConstraint("name", name="unique_tag_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+
+    posts: Mapped[list["PostORM"]] = relationship(
+        secondary=post_tags,
+        back_populates="tags"
+    )
+
+
+class AuthorORM(Base):
+    __tablename__ = "authors"
+
+    # Esta es la forma mas completa de crear restricciones porque se pueden crear:
+    # |_ múltiples columnas  |_ nombre custom  |_ constraints avanzados
+
+    # __table_args__ = (UniqueConstraint("name", name="unique_author_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    # unique tambien sirve para hacer restricciones simples sobre una unica columna
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)
+
+    posts: Mapped[list["PostORM"]] = relationship(back_populates='author',)
 
 
 # Esto unicamnete es para nuestro entorno de desarrollo, solo va a crear las
