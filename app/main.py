@@ -123,11 +123,14 @@ class Tag(BaseModel):
     name: str = Field(..., min_length=2, max_length=30,
                       description='Nombre de la etiqueta')
 
+    model_config = ConfigDict(from_attributes=True)
+
 
 class Author(BaseModel):
     name: str = Field(..., min_length=10, max_length=100,
                       description='Nombre del autor')
     email: EmailStr = Field(..., description='Correo electronico del autor')
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostBase(BaseModel):
@@ -136,6 +139,7 @@ class PostBase(BaseModel):
     # Field(default_factory=list) ayuda a crear siempre una lista de forma independiente
     tags: Optional[list[Tag]] = Field(default_factory=list)  # []
     author: Optional[Author] = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostCreate(BaseModel):
