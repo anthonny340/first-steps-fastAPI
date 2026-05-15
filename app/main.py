@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
 from sqlalchemy import ForeignKey, create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint, Table, Column
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship, selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from theme import dark_css
 from fastapi.openapi.docs import get_swagger_ui_html
@@ -327,11 +327,28 @@ def list_post(
 
 
 @app.get('/post/by-tags', response_model=list[PostPublic])
-def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o mas etiquetas.', example='?tags=python&tags=fastapi')):
+def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o mas etiquetas.', example='?tags=python&tags=fastapi',),
+                   db: Session = Depends(get_db),):
 
-    tags_lower = [tag.lower() for tag in tags]
+    normalized_tag: list[str] = [tag.strip().lower()
+                                 for tag in tags if tag.strip()]
 
-    # return [post for post in BLOG_POST if any(tag['name'].lower() in tags_lower for tag in post.get('tags', []))]
+    if not normalized_tag:
+        return []
+
+    post_list = (
+        select(PostORM)
+        .options(
+            selectinload(PostORM.tags),
+            joinedload(PostORM.author),
+        )
+        .where(PostORM.tags.any(func.lower(TagORM.name).in_(normalized_tag)))
+        .order_by(PostORM.id.asc())
+    )
+
+    posts = db.execute(post_list).scalars().all()
+
+    return [PostPublic.model_validate(post) for post in posts]
 
 
 @app.get('/posts/{post_id}', response_model=Union[PostPublic, PostSummary],
