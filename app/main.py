@@ -50,7 +50,7 @@ post_tags = Table(
 
 
 class PostORM(Base):
-    __tablename__ = 'post'
+    __tablename__ = 'posts'
     __table_args__ = (UniqueConstraint("title", name="unique_post_title"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -130,6 +130,7 @@ class Author(BaseModel):
     name: str = Field(..., min_length=10, max_length=100,
                       description='Nombre del autor')
     email: EmailStr = Field(..., description='Correo electronico del autor')
+    # Esto permite validar tambien objetos y no solo diccionarios
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -375,7 +376,35 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
     :return: Diccionario con el post actualizado.
     :rtype: dict[str, Any]
     '''
-    new_post = PostORM(title=post.title, content=post.content)
+
+    if (post.author):
+        author_obj = db.execute(select(AuthorORM).where(
+            AuthorORM.email == post.author.email)).scalar_one_or_none()
+
+        if not author_obj:
+            author_obj = AuthorORM(
+                name=post.author.name, email=post.author.email)
+            db.add(author_obj)
+            db.flush()  # Sirve para asignar el id antes de hacer el commit. Solo para asegurarnos de que tenga un id
+
+    list_tag_obj: list[TagORM] = []
+    for tag in post.tags:
+        # En el Where poner TagORM.name == tag.name no es lo mismo que poner TagORM.name.ilike(tag.name)
+        # El == compara exactamente el string considerando mayusculas y minusculas (Python == python) esta condicion seria false
+        # Mientas que ilike compara ignorando mayúsculas/minúsculas. En el mundo real para manejo de tags esto es mas util
+        tag_obj = db.execute(select(TagORM).where(
+            TagORM.name.ilike(tag.name))).scalar_one_or_none()
+
+        if not tag_obj:
+            tag_obj = TagORM(name=tag.name)
+            db.add(tag_obj)
+            db.flush()
+
+        list_tag_obj.append(tag_obj)
+
+    new_post = PostORM(
+        title=post.title, content=post.content, author=author_obj, tags=list_tag_obj)
+
     try:
         db.add(new_post)
         db.commit()
@@ -386,8 +415,9 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=409, detail='Ese titulo ya existe, pruebe otro')
 
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         print('SALTO UN ERROR TIPO SQLAlchemyError')
+        print(e)
         db.rollback()
         raise HTTPException(status_code=500, detail='Error al crear el post')
 
