@@ -18,7 +18,6 @@ htmlcov/
 
 # Entornos y secretos
 .env
-.env.*
 
 # VSCode
 .vscode/
@@ -34,3 +33,5 @@ Thumbs.db
 # migrations/versions/*.pyc
 
 # Poetry (NO ignorar pyproject.toml ni poetry.lock)
+
+.db

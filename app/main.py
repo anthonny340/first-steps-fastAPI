@@ -10,9 +10,11 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from theme import dark_css
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
+from dotenv import load_dotenv
 
+load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./blog.db')
-print(f'Conectado a: {DATABASE_URL}')
+# print(f'Conectado a: {DATABASE_URL}')
 
 engine_kwargs = {}
 if DATABASE_URL.startswith('sqlite'):
