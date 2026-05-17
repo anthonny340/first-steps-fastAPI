@@ -11,7 +11,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 
-from app.core.db import Base, engine, get_db
+from core.db import Base, engine, get_db
 
 load_dotenv()
 
