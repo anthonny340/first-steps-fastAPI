@@ -1,38 +1,19 @@
-import os
 from datetime import datetime
 from fastapi import FastAPI, Query, Body, HTTPException, Path, status, Depends
 from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, Union, Literal
 from math import ceil
-from sqlalchemy import ForeignKey, create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint, Table, Column
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship, selectinload, joinedload
+from sqlalchemy import ForeignKey, Integer, String, Text, DateTime, select, func, UniqueConstraint, Table, Column
+from sqlalchemy.orm import Session, Mapped, mapped_column, relationship, selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from theme import dark_css
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 
+from app.core.db import Base, engine, get_db
+
 load_dotenv()
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./blog.db')
-# print(f'Conectado a: {DATABASE_URL}')
-
-engine_kwargs = {}
-if DATABASE_URL.startswith('sqlite'):
-    engine_kwargs['connect_args'] = {'check_same_thread': False}
-
-# echo muestra el SQL ejecutado, util para ver las consultas que se estan haciendo
-# future en True lo que dice es que queremos ocuparar la sintaxis moderna de SQLAlchemy 2
-engine = create_engine(DATABASE_URL, echo=True, future=True, **engine_kwargs)
-
-# autoflush lo que hace es no enviar cambios automaticos hasta hacer el commit
-# autocommit en False lo que hace es que tenga control explicito sobre el commit
-SessionLocal = sessionmaker(
-    bind=engine, autoflush=False, autocommit=False, class_=Session)
-
-
-class Base(DeclarativeBase):
-    pass
-
 
 post_tags = Table(
     "posts_tags",
@@ -106,14 +87,6 @@ class AuthorORM(Base):
 Base.metadata.create_all(bind=engine)  # dev
 
 # Para produccion, no se ocupa esto, se ocupa migraciones
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 DARK_DOCS = True
