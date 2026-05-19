@@ -1,8 +1,8 @@
 from app.core.db import Base
 from datetime import datetime
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, UniqueConstraint
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import Optional, Text, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 # Esto es para evitar importaciones circulares, porque AuthorORM y TagORM necesitan importar PostORM y viceversa,
 # entonces se usa TYPE_CHECKING para que solo se importe en tiempo de chequeo de tipos y no en tiempo de ejecución. 
