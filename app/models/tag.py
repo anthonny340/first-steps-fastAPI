@@ -14,6 +14,6 @@ class TagORM(Base):
     name: Mapped[str] = mapped_column(String(30), unique=True, index=True)
 
     posts: Mapped[list["PostORM"]] = relationship(
-        secondary=post_tags,
+        secondary="posts_tags",
         back_populates="tags"
     )

@@ -43,6 +43,6 @@ class PostORM(Base):
         ForeignKey("authors.id"), nullable=True)
 
     tags: Mapped[list["TagORM"]] = relationship(
-        secondary=post_tags,
+        secondary="posts_tags",
         back_populates="posts"
     )
