@@ -12,11 +12,13 @@ from app.models import PostORM, AuthorORM, TagORM
 from app.core.db import get_db
 
 from app.api.v1.posts import repository
+from app.core.security import oauth2_scheme
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
-@router.get("", response_model= PaginatedPost, summary="Lista todos los posts",
-         description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo.")
+
+@router.get("", response_model=PaginatedPost, summary="Lista todos los posts",
+            description="Devuelve una lista completa de posts disponibles. Se puede filtar por contenido del titulo.")
 def list_post(
     # Esto nos ayuda a en un entorno de produccion queremos implementar otros parametros
     # seguimos manteniendo la misma funcionalidad sin embargo avisamos al cliente que pronto
@@ -63,9 +65,11 @@ def list_post(
     # lo usen lo queramos mantener hasta en un proximo realease eliminarlo por completo
     query = query or text
 
-    total, posts = repository.search(query, per_page, page, order_by, direction)
+    total, posts = repository.search(
+        query, per_page, page, order_by, direction)
 
-    posts = [PostPublic.model_validate(post, from_attributes=True) for post in posts]
+    posts = [PostPublic.model_validate(
+        post, from_attributes=True) for post in posts]
 
     total_pages = ceil(total/per_page) if total > 0 else 0
     current_page = 1 if total_pages == 0 else min(page, total_pages)
@@ -86,6 +90,8 @@ def list_post(
         items=posts)
 
 # ListPostByTags
+
+
 @router.get("/by-tags", response_model=list[PostPublic])
 def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o mas etiquetas.', example='?tags=python&tags=fastapi',),
                    db: Session = Depends(get_db),):
@@ -102,13 +108,12 @@ def filter_by_tags(tags: list[str] = Query(..., min_length=1, description='Una o
     if not posts:
         raise HTTPException(status_code=404, detail='Post no encontrado')
 
-
     return [PostPublic.model_validate(post) for post in posts]
 
 
-@router.get("/{post_id}", response_model=Union[PostPublic, PostSummary],response_description='Post encontrado',
-         summary="Busca un post por ID",
-         description="Devuelve el post encontrado. Se puede especificar si se quiere visualizar el contenido.")
+@router.get("/{post_id}", response_model=Union[PostPublic, PostSummary], response_description='Post encontrado',
+            summary="Busca un post por ID",
+            description="Devuelve el post encontrado. Se puede especificar si se quiere visualizar el contenido.")
 def get_post(post_id: int = Path(
     ..., ge=1, title='ID del post',
     description='Identificador entero del post. Debe ser mayor a uno',
@@ -122,7 +127,7 @@ def get_post(post_id: int = Path(
     :return: Diccionario de posts coincidentes.
     :rtype: (dict[str, dict[str, Any]] | dict[str, str])
     '''
-    
+
     repository = PostRepository(db)
     post = repository.get(post_id)
 
@@ -133,8 +138,6 @@ def get_post(post_id: int = Path(
         return PostPublic.model_validate(post, from_attributes=True)
 
     return PostSummary.model_validate(post, from_attributes=True)
-
-
 
 
 @router.post("", response_model=PostPublic, response_description='Post creado (OK)', status_code=status.HTTP_201_CREATED)
@@ -150,7 +153,8 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
     repository = PostRepository(db)
 
     try:
-        new_post = repository.create_post(post.title, post.content, [tag.model_dump() for tag in post.tags], post.author.model_dump() if post.author else None)
+        new_post = repository.create_post(post.title, post.content, [tag.model_dump(
+        ) for tag in post.tags], post.author.model_dump() if post.author else None)
         db.commit()
         db.refresh(new_post)
         return new_post
@@ -231,3 +235,8 @@ def delete_post(post_id: int, db: Session = Depends(get_db)):
         db.commit()
     except SQLAlchemyError:
         HTTPException(status_code=500, detail="Error al eliminar el post")
+
+
+@router.get("/secure")
+def secure_endpoint(token: str = Depends(oauth2_scheme)):
+    return {"message": "Acceso con token", "token_recibido": token}
